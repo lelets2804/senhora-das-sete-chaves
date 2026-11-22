@@ -29,6 +29,7 @@ export default function App() {
         <Route path="/pagamento/demo" element={<Protegida><PagamentoDemo /></Protegida>} />
         <Route path="/pagamento/retorno" element={<Protegida><RetornoPagamento /></Protegida>} />
         <Route path="/minha-area" element={<Protegida><MinhaArea /></Protegida>} />
+        <Route path="/minha-area/conta" element={<Protegida><MinhaArea foco="conta" /></Protegida>} />
         <Route path="/minha-area/consulta/:id" element={<Protegida><Consulta /></Protegida>} />
         <Route path="/painel" element={<Protegida admin><Painel /></Protegida>} />
         <Route path="/painel/consulta/:id" element={<Protegida admin><Consulta admin /></Protegida>} />

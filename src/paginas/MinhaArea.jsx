@@ -3,18 +3,19 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { formatarDataHora, formatarData, reais, STATUS } from '../lib/horarios'
+import { formatarDataHora, formatarData, reais, STATUS, liberacaoDaLeitura, leituraLiberada } from '../lib/horarios'
 import { PaginaInterna, Moldura, Erro, AvisoDemo } from '../components/Interno'
 import { CartaCigana, Revelar } from '../components/Basicos'
 
-export default function MinhaArea() {
+export default function MinhaArea({ foco }) {
   const { usuario } = useAuth()
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   useEffect(() => { api.meusAgendamentos().then(setLista).catch((e) => setErro(e.message)) }, [])
 
   const leituras = (lista || []).filter((a) => a.leitura)
-  const proximas = (lista || []).filter((a) => !a.leitura && ['confirmado', 'aguardando_pagamento', 'conflito'].includes(a.status))
+  // à distância: enquanto a leitura não é liberada (24h após o pagamento), a consulta fica em "próximas"
+  const proximas = (lista || []).filter((a) => !a.leitura && (['confirmado', 'aguardando_pagamento', 'conflito'].includes(a.status) || (a.status === 'concluido' && !leituraLiberada(a))))
     .filter((a) => a.status !== 'aguardando_pagamento' || Date.now() - new Date(a.criado_em) < 30 * 60000)
     .sort((a, b) => new Date(a.inicio || a.criado_em) - new Date(b.inicio || b.criado_em))
   const primeiroNome = usuario?.nome?.split(' ')[0]
@@ -30,6 +31,7 @@ export default function MinhaArea() {
         <Link to="/agendar" className="botao">Nova consulta</Link>
       </div>
       <Erro>{erro}</Erro>
+      {foco === 'conta' && <p className="sucesso">Você entrou pelo link do e-mail. Crie sua <strong>nova senha</strong> em “Minha conta”, logo abaixo. 🔑</p>}
 
       <section className="area-bloco">
         <h2 className="area-titulo"><span>I</span> Próximas consultas</h2>
@@ -43,8 +45,8 @@ export default function MinhaArea() {
                   <CartaCigana n={a.servico?.carta || 33} className="proxima-carta" />
                   <div>
                     <h3>{a.servico?.nome}</h3>
-                    <p>{a.inicio ? formatarDataHora(a.inicio) : 'À distância · leitura em até 24h'}</p>
-                    <span className={`etiqueta ${a.status}`}>{STATUS[a.status]}</span>
+                    <p>{a.inicio ? formatarDataHora(a.inicio) : liberacaoDaLeitura(a) ? `Sua leitura chega em ${formatarDataHora(liberacaoDaLeitura(a).toISOString())}` : 'À distância · 24h após o pagamento'}</p>
+                    <span className={`etiqueta ${leituraLiberada(a) ? a.status : 'confirmado'}`}>{leituraLiberada(a) ? STATUS[a.status] : 'Leitura em preparo'}</span>
                   </div>
                   <span className="seta">→</span>
                 </Link>
@@ -76,14 +78,14 @@ export default function MinhaArea() {
         </div>
       </section>
 
-      <MinhaConta />
+      <MinhaConta foco={foco === 'conta'} />
       <Historico lista={lista} />
     </PaginaInterna>
   )
 }
 
 function Historico({ lista }) {
-  const outros = (lista || []).filter((a) => !a.leitura && ['concluido', 'cancelado'].includes(a.status))
+  const outros = (lista || []).filter((a) => !a.leitura && leituraLiberada(a) && ['concluido', 'cancelado'].includes(a.status))
   if (!outros.length) return null
   return (
     <section className="area-bloco">
@@ -97,8 +99,9 @@ function Historico({ lista }) {
   )
 }
 
-function MinhaConta() {
+function MinhaConta({ foco }) {
   const { usuario } = useAuth()
+  useEffect(() => { if (foco) setTimeout(() => document.getElementById('minha-conta')?.scrollIntoView({ behavior: 'smooth' }), 400) }, [foco])
   const [f, setF] = useState({ nome: usuario?.nome || '', telefone: usuario?.telefone || '' })
   const [msg, setMsg] = useState('')
   const [senha, setSenha] = useState('')
@@ -111,7 +114,7 @@ function MinhaConta() {
     } catch (err) { setMsg(err.message) }
   }
   return (
-    <section className="area-bloco">
+    <section className="area-bloco" id="minha-conta">
       <h2 className="area-titulo"><span>III</span> Minha conta</h2>
       <Moldura>
         <form className="formulario linha" onSubmit={salvar}>
