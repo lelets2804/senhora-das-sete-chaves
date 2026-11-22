@@ -9,6 +9,7 @@ import Agendar from './paginas/Agendar'
 import { PagamentoDemo, RetornoPagamento } from './paginas/Pagamento'
 import MinhaArea from './paginas/MinhaArea'
 import Consulta from './paginas/Consulta'
+import Painel from './paginas/Painel'
 import EmailsDemo from './paginas/EmailsDemo'
 import './styles/home.css'
 import './styles/app.css'
@@ -29,6 +30,8 @@ export default function App() {
         <Route path="/pagamento/retorno" element={<Protegida><RetornoPagamento /></Protegida>} />
         <Route path="/minha-area" element={<Protegida><MinhaArea /></Protegida>} />
         <Route path="/minha-area/consulta/:id" element={<Protegida><Consulta /></Protegida>} />
+        <Route path="/painel" element={<Protegida admin><Painel /></Protegida>} />
+        <Route path="/painel/consulta/:id" element={<Protegida admin><Consulta admin /></Protegida>} />
         <Route path="/demo/emails" element={<EmailsDemo />} />
         <Route path="*" element={<EmBreve />} />
       </Routes>
