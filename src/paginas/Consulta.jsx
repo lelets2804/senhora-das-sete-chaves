@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { formatarDataHora, formatarData, reais, STATUS } from '../lib/horarios'
+import { formatarDataHora, formatarData, reais, STATUS, liberacaoDaLeitura, leituraLiberada } from '../lib/horarios'
 import { cartas as todasCartas } from '../data/cartas'
 import { PaginaInterna, Moldura, Erro, AvisoDemo } from '../components/Interno'
 import { CartaCigana } from '../components/Basicos'
@@ -32,7 +32,9 @@ export default function Consulta({ admin = false }) {
           <h1 className="titulo">{ag.servico?.nome}</h1>
           <p className="consulta-meta">
             {ag.inicio ? formatarDataHora(ag.inicio) : `Pedida em ${formatarData(ag.criado_em, { day: '2-digit', month: 'long' })}`}
-            {' · '}{reais(ag.valor)} <span className={`etiqueta ${ag.status}`}>{STATUS[ag.status]}</span>
+            {' · '}{reais(ag.valor)} {!admin && !leituraLiberada(ag)
+              ? <span className="etiqueta confirmado">Leitura em preparo</span>
+              : <span className={`etiqueta ${ag.status}`}>{STATUS[ag.status]}</span>}
           </p>
           {admin && ag.cliente && (
             <p className="consulta-cliente">👤 <strong>{ag.cliente.nome}</strong> · {ag.cliente.email}{ag.cliente.telefone && ` · ${ag.cliente.telefone}`}</p>
@@ -51,17 +53,37 @@ export default function Consulta({ admin = false }) {
         <p className="vazio">Esta reserva ainda aguarda a confirmação do pagamento. Reservas não pagas expiram em 30 minutos.</p>
       )}
       {ag.status === 'conflito' && (
-        <p className="erro">{admin ? 'Duas pessoas pagaram por este horário ao mesmo tempo. Combine um novo horário com o consulente ou faça o estorno no Mercado Pago.' : 'Houve um conflito de horário. A Senhora vai entrar em contato para remarcar.'}</p>
+        <p className="erro">{admin ? 'Duas pessoas pagaram por este horário ao mesmo tempo. Combine um novo horário com o consulente ou faça o estorno pelo Asaas.' : 'Houve um conflito de horário. A Senhora vai entrar em contato para remarcar.'}</p>
       )}
 
       {admin && <AcoesAdmin ag={ag} aoMudar={recarregar} />}
       {salaAberta && <Sala ag={ag} admin={admin} />}
       {ag.leitura && <Leitura ag={ag} admin={admin} />}
       {admin && ['confirmado', 'concluido'].includes(ag.status) && <EnviarLeitura ag={ag} aoEnviar={recarregar} />}
-      {!admin && !ag.leitura && ag.status === 'confirmado' && !aoVivo && (
-        <p className="vazio">A Senhora já recebeu sua pergunta. Quando ela jogar as cartas, a foto da mesa e a explicação aparecem aqui. 🔑</p>
-      )}
+      {ag.status === 'concluido' && leituraLiberada(ag) && (!admin || ag.depoimento) && <Depoimento ag={ag} admin={admin} aoEnviar={recarregar} />}
+      {!admin && !ag.leitura && !aoVivo && ['confirmado', 'concluido'].includes(ag.status) && <Aguardando ag={ag} />}
     </PaginaInterna>
+  )
+}
+
+/* ---------- Consulta à distância: a leitura chega 24h após o pagamento ---------- */
+function Aguardando({ ag }) {
+  const libera = liberacaoDaLeitura(ag)
+  const [agora, setAgora] = useState(Date.now())
+  useEffect(() => { const t = setInterval(() => setAgora(Date.now()), 30000); return () => clearInterval(t) }, [])
+  const falta = libera ? Math.max(0, libera.getTime() - agora) : 0
+  const h = Math.floor(falta / 3600000), m = Math.floor((falta % 3600000) / 60000)
+  return (
+    <Moldura className="aguardando">
+      <motion.span className="girando grande" aria-hidden>⚷</motion.span>
+      <span className="rotulo">Sua leitura está sendo preparada</span>
+      {libera && <h2 className="titulo">Chega em <em>{formatarDataHora(libera.toISOString())}</em></h2>}
+      {libera && falta > 0 && <p className="contagem-regressiva">faltam {h}h {String(m).padStart(2, '0')}min</p>}
+      <p className="texto-suave">
+        A Senhora já recebeu sua pergunta. As consultas à distância são entregues <strong>24 horas após o pagamento</strong>:
+        a foto da mesa e a explicação aparecem aqui, e você recebe um aviso por e-mail. 🔑
+      </p>
+    </Moldura>
   )
 }
 
@@ -198,7 +220,7 @@ function AcoesAdmin({ ag, aoMudar }) {
       <div className="acoes-linha">
         {ag.status === 'confirmado' && <button className="botao botao-pequeno botao-vazado" onClick={() => mudar({ status: 'concluido' })}>Marcar como concluída</button>}
         {['confirmado', 'conflito'].includes(ag.status) && (
-          <button className="botao botao-pequeno botao-vazado perigo" onClick={() => confirm('Cancelar esta consulta? O estorno do valor é feito no painel do Mercado Pago.') && mudar({ status: 'cancelado' })}>Cancelar</button>
+          <button className="botao botao-pequeno botao-vazado perigo" onClick={() => confirm('Cancelar esta consulta? O estorno do valor é feito no painel do Asaas.') && mudar({ status: 'cancelado' })}>Cancelar</button>
         )}
       </div>
       {ag.servico?.modo === 'ao-vivo' && (
@@ -226,13 +248,21 @@ function EnviarLeitura({ ag, aoEnviar }) {
     e.preventDefault(); setEnviando(true); setMsg('')
     try {
       await api.enviarLeitura(ag.id, { foto, audio, texto, cartas })
-      setFoto(null); setAudio(null); setMsg('Leitura enviada! O consulente já pode ver na área dele.')
+      setFoto(null); setAudio(null)
+      setMsg(leituraLiberada(ag) ? 'Leitura enviada! O consulente já pode ver na área dele.' : `Leitura salva! O consulente vê a partir de ${formatarDataHora(liberacaoDaLeitura(ag).toISOString())}.`)
       aoEnviar()
     } catch (err) { setMsg(err.message) } finally { setEnviando(false) }
   }
   return (
     <section className="enviar-leitura">
       <h2 className="area-titulo"><span>✉</span> {ag.leitura ? 'Atualizar a leitura' : 'Enviar a leitura'}</h2>
+      {liberacaoDaLeitura(ag) && (
+        <p className="texto-suave pequeno">
+          {leituraLiberada(ag)
+            ? 'O consulente já pode ver a leitura assim que você enviar.'
+            : `Pode enviar quando quiser: o consulente vê a leitura a partir de ${formatarDataHora(liberacaoDaLeitura(ag).toISOString())} (24h após o pagamento) e recebe o aviso por e-mail nessa hora.`}
+        </p>
+      )}
       <form onSubmit={enviar} className="enviar-grade">
         <label className="envio-foto">
           <input type="file" accept="image/*" capture="environment" onChange={(e) => setFoto(e.target.files[0] || null)} hidden />
@@ -315,5 +345,62 @@ function SeletorCartas({ valor, onChange }) {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+/* ---------- Depoimento do consulente ---------- */
+const ROTULO_DEP = { pendente: 'aguardando aprovação', aprovado: 'publicado no site ✓', recusado: 'não publicado' }
+function Depoimento({ ag, admin, aoEnviar }) {
+  const { usuario } = useAuth()
+  const d = ag.depoimento
+  const nomeSugerido = (() => {
+    const partes = (usuario?.nome || '').trim().split(/\s+/)
+    return partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1][0]}.` : partes[0] || ''
+  })()
+  const [f, setF] = useState({ texto: '', nome: nomeSugerido, cidade: '' })
+  const [autorizo, setAutorizo] = useState(false)
+  const [erro, setErro] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  async function enviar(e) {
+    e.preventDefault(); setErro(''); setEnviando(true)
+    try { await api.enviarDepoimento(ag.id, f); aoEnviar() } catch (err) { setErro(err.message) } finally { setEnviando(false) }
+  }
+  if (d) {
+    return (
+      <section className="depoimento-bloco">
+        <h2 className="area-titulo"><span>✎</span> {admin ? 'Depoimento do consulente' : 'Seu depoimento'}</h2>
+        <motion.figure className="bilhete bilhete-solto" initial={{ rotate: 0, opacity: 0 }} animate={{ rotate: -1.5, opacity: 1 }}>
+          <span className="bilhete-lacre">7</span>
+          <blockquote>“{d.texto}”</blockquote>
+          <figcaption>{d.nome_exibido}{d.cidade && <> · <em>{d.cidade}</em></>}</figcaption>
+        </motion.figure>
+        <p className="texto-suave pequeno">Situação: <span className={`etiqueta dep-${d.status}`}>{ROTULO_DEP[d.status]}</span></p>
+        {!admin && d.status === 'pendente' && <p className="texto-suave pequeno">Obrigada! Ele aparece no site assim que a Senhora aprovar. ✦</p>}
+      </section>
+    )
+  }
+  return (
+    <section className="depoimento-bloco">
+      <h2 className="area-titulo"><span>✎</span> Deixe seu depoimento</h2>
+      <p className="texto-suave">Como foi a sua consulta? Suas palavras ajudam outras pessoas a chegarem até aqui.</p>
+      <Moldura>
+        <form className="formulario" onSubmit={enviar}>
+          <label>Seu depoimento
+            <textarea rows={4} required minLength={10} maxLength={800} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })}
+              placeholder="Conte como você se sentiu, o que a leitura trouxe para você…" />
+          </label>
+          <div className="formulario linha">
+            <label>Como seu nome aparece<input required minLength={2} maxLength={60} value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} /></label>
+            <label>Cidade <small>(opcional)</small><input maxLength={60} value={f.cidade} onChange={(e) => setF({ ...f, cidade: e.target.value })} /></label>
+          </div>
+          <label className="check"><input type="checkbox" checked={autorizo} onChange={(e) => setAutorizo(e.target.checked)} />
+            Autorizo publicar este depoimento no site com o nome acima.</label>
+          <Erro>{erro}</Erro>
+          <button className="botao" disabled={!autorizo || enviando || f.texto.trim().length < 10}>{enviando ? 'Enviando…' : 'Enviar depoimento'}</button>
+          <p className="texto-suave pequeno">Dica: você pode usar só as iniciais, como “M. A.”, se preferir não se identificar.</p>
+        </form>
+      </Moldura>
+    </section>
   )
 }

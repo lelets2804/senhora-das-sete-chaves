@@ -1,4 +1,4 @@
-// Backend real: Supabase (login, banco, arquivos, tempo real) + Mercado Pago (via Edge Functions)
+// Backend real: Supabase (login, banco, arquivos, tempo real) + Asaas (pagamentos, via Edge Functions)
 import { createClient } from '@supabase/supabase-js'
 
 // (valores de reserva só para não quebrar no modo demonstração, quando este arquivo não é usado)
@@ -21,8 +21,11 @@ function traduzir(msg = '') {
 /* ---------- sessão ---------- */
 async function perfil(user) {
   if (!user) return null
-  const { data } = await supabase.from('profiles').select('nome, telefone, papel').eq('id', user.id).maybeSingle()
-  return { id: user.id, email: user.email, nome: data?.nome || user.user_metadata?.nome || '', telefone: data?.telefone || '', papel: data?.papel || 'cliente' }
+  const { data } = await supabase.from('profiles').select('nome, telefone, papel, asaas_cliente_id').eq('id', user.id).maybeSingle()
+  return {
+    id: user.id, email: user.email, nome: data?.nome || user.user_metadata?.nome || '', telefone: data?.telefone || '', papel: data?.papel || 'cliente',
+    temCadastroPagamento: !!data?.asaas_cliente_id,   // já informou o CPF numa compra anterior
+  }
 }
 export async function obterSessao() { const { data } = await supabase.auth.getSession(); return perfil(data.session?.user) }
 export function aoMudarSessao(cb) {

@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   const { data: ag } = await sb.from('agendamentos').select(SELECT_AG).eq('id', agendamentoId).single()
   if (!ag) return new Response(JSON.stringify({ erro: 'Consulta não encontrada.' }), { status: 404, headers: cors })
   // à distância: o aviso sai só quando a leitura é liberada (24h após o pagamento) — a função "lembretes" cuida disso
-  const libera = ag.servico?.modo === 'distancia' && ag.pago_em ? new Date(ag.pago_em).getTime() + 24 * 3600000 : 0
+  const libera = ag.servico?.modo === 'distancia' && ag.pago_em ? Math.max(new Date(ag.pago_em).getTime() + 24 * 3600000, ag.fim ? new Date(ag.fim).getTime() : 0) : 0
   if (libera > Date.now()) return new Response(JSON.stringify({ ok: true, agendado: new Date(libera).toISOString() }), { headers: { ...cors, 'Content-Type': 'application/json' } })
   const d = dadosDe(ag)
   await enviarEmail(d.clienteEmail, leituraPronta(d))

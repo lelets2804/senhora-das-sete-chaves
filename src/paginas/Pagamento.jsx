@@ -6,7 +6,7 @@ import { PaginaInterna, Moldura } from '../components/Interno'
 import { IconeChave, CartaCigana } from '../components/Basicos'
 import { formatarDataHora, reais, liberacaoDaLeitura } from '../lib/horarios'
 
-/* Só no modo demonstração: imita a tela do Mercado Pago */
+/* Só no modo demonstração: imita a tela de pagamento */
 export function PagamentoDemo() {
   const [params] = useSearchParams()
   const nav = useNavigate()
@@ -22,7 +22,7 @@ export function PagamentoDemo() {
   return (
     <div className="mp-demo">
       <div className="mp-caixa">
-        <div className="mp-topo">mercado pago <small>· simulação</small></div>
+        <div className="mp-topo">pagamento <small>· simulação</small></div>
         {ag && <p className="mp-valor">{ag.servico?.nome}<strong>{reais(ag.valor)}</strong></p>}
         <div className="mp-qr" aria-hidden>{Array.from({ length: 121 }, (_, i) => <span key={i} style={{ opacity: (i * 7919) % 3 ? 1 : 0 }} />)}</div>
         <p className="mp-legenda">Na versão real o consulente paga aqui com Pix ou cartão.</p>
@@ -33,7 +33,7 @@ export function PagamentoDemo() {
   )
 }
 
-/* Volta do Mercado Pago */
+/* Volta do pagamento (Asaas) */
 export function RetornoPagamento() {
   const [params] = useSearchParams()
   const ref = params.get('external_reference')
@@ -41,7 +41,7 @@ export function RetornoPagamento() {
   const [ag, setAg] = useState(null)
   const [tentativas, setTentativas] = useState(0)
 
-  // o aviso do Mercado Pago pode chegar alguns segundos depois: consulta algumas vezes
+  // o aviso de pagamento pode chegar alguns segundos depois: consulta algumas vezes
   useEffect(() => {
     if (!ref) return
     let parar = false
@@ -102,7 +102,7 @@ export function RetornoPagamento() {
             <p className="texto-suave">
               {tentativas >= 12
                 ? 'Seu pagamento ainda está sendo processado (o Pix pode levar alguns minutos). Assim que for aprovado, a consulta aparece como confirmada na sua área.'
-                : 'Aguarde só um instante enquanto o Mercado Pago confirma.'}
+                : 'Aguarde só um instante enquanto o pagamento é confirmado.'}
             </p>
             <Link to="/minha-area" className="botao botao-vazado">Ir para minha área</Link>
           </>

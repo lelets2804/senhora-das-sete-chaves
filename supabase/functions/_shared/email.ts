@@ -28,6 +28,7 @@ export function dadosDe(ag: any) {
     aoVivo: ag.servico?.modo === 'ao-vivo',
     duracao: ag.servico?.duracao,
     inicio: ag.inicio,
+    fim: ag.fim,
     valor: Number(ag.valor),
     pergunta: ag.pergunta,
     agendamentoId: ag.id,

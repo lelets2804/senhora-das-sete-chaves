@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import api, { MODO_DEMO } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { consultas as consultasPadrao } from '../data/consultas'
 import { hojeLocal, somarDias, horariosDoDia, formatarHora, formatarData, formatarDataHora, reais, diaDaSemana, FUSO, pedeHorario } from '../lib/horarios'
 import { PaginaInterna, Moldura, Erro, AvisoDemo } from '../components/Interno'
@@ -13,6 +14,9 @@ const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 export default function Agendar() {
   const [params, setParams] = useSearchParams()
   const nav = useNavigate()
+  const { usuario } = useAuth()
+  const pedeCpf = !MODO_DEMO && !usuario?.temCadastroPagamento   // o Asaas exige CPF na primeira compra
+  const [cpf, setCpf] = useState('')
   const [servicos, setServicos] = useState(consultasPadrao)
   const [agenda, setAgenda] = useState(null)
   const [diaEscolhido, setDia] = useState(null)
@@ -58,7 +62,8 @@ export default function Agendar() {
   async function pagar() {
     setErro(''); setPagando(true)
     try {
-      const { url } = await api.iniciarPagamento({ servicoId: servico.id, inicio: horario, pergunta })
+      if (pedeCpf && !cpfValido(cpf)) throw new Error('Confira o CPF: ele é exigido pelo sistema de pagamento.')
+      const { url } = await api.iniciarPagamento({ servicoId: servico.id, inicio: horario, pergunta, cpf: cpf.replace(/\D/g, '') })
       sessionStorage.removeItem('pergunta-rascunho')
       if (url.startsWith('/')) nav(url); else window.location.href = url
     } catch (e) { setErro(e.message); setPagando(false) }
@@ -148,6 +153,12 @@ export default function Agendar() {
                 <textarea rows={5} value={pergunta} onChange={(e) => setPergunta(e.target.value)} maxLength={2000}
                   placeholder={servico.modo === 'distancia' ? 'Escreva sua pergunta com o máximo de clareza.' : 'Se quiser, adiante o assunto da consulta.'} />
               </label>
+              {pedeCpf && (
+                <label>
+                  CPF de quem vai pagar <small>(pedido só na primeira compra, pelo sistema de pagamento)</small>
+                  <input value={cpf} onChange={(e) => setCpf(mascaraCpf(e.target.value))} inputMode="numeric" placeholder="000.000.000-00" autoComplete="off" />
+                </label>
+              )}
               <label className="aceite">
                 <input type="checkbox" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />
                 <span>Tenho mais de 18 anos e entendo que a cartomancia é uma orientação espiritual, que não substitui
@@ -155,16 +166,32 @@ export default function Agendar() {
               </label>
               <Erro>{erro}</Erro>
               <button className="botao botao-largo" onClick={pagar}
-                disabled={pagando || !aceite || (servico.modo === 'distancia' && pergunta.trim().length < 5)}>
+                disabled={pagando || !aceite || (servico.modo === 'distancia' && pergunta.trim().length < 5) || (pedeCpf && cpf.replace(/\D/g, '').length !== 11)}>
                 {pagando ? 'Abrindo o pagamento…' : `Pagar ${reais(servico.preco)} · Pix ou cartão`}
               </button>
-              <p className="seguro">🔒 Pagamento processado pelo Mercado Pago{MODO_DEMO && ' (simulado na demonstração)'}</p>
+              <p className="seguro">🔒 Pagamento seguro pelo Asaas · Pix, cartão ou boleto{MODO_DEMO && ' (simulado na demonstração)'}</p>
             </Moldura>
           </motion.div>
         )}
       </AnimatePresence>
     </PaginaInterna>
   )
+}
+
+/* CPF: máscara 000.000.000-00 e conferência dos dígitos */
+function mascaraCpf(v) {
+  const d = v.replace(/\D/g, '').slice(0, 11)
+  return d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+function cpfValido(v) {
+  const c = v.replace(/\D/g, '')
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false
+  for (const t of [9, 10]) {
+    let soma = 0
+    for (let i = 0; i < t; i++) soma += Number(c[i]) * (t + 1 - i)
+    if (((soma * 10) % 11) % 10 !== Number(c[t])) return false
+  }
+  return true
 }
 
 function Resumo({ servico, horario, onTrocar, onTrocarHorario }) {

@@ -58,15 +58,15 @@ function Agenda() {
   return (
     <>
       <div className="numeros">
-        {[['Ao vivo marcadas', g.proximas.length], ['Perguntas para responder', g.distancia.length], ['Recebido este mês', reais(g.ganhosMes)]].map(([t, v], i) => (
+        {[['Consultas marcadas', g.proximas.length + g.distancia.length], ['Leituras para enviar', g.semLeitura.length + g.distancia.length], ['Recebido este mês', reais(g.ganhosMes)]].map(([t, v], i) => (
           <motion.div key={t} className="numero" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
             <strong>{v}</strong><span className="rotulo">{t}</span>
           </motion.div>
         ))}
       </div>
-      <Bloco titulo="Perguntas à distância para responder" itens={g.distancia} vazio="Nenhuma pergunta esperando. ✦" />
-      <Bloco titulo="Próximas consultas ao vivo" itens={g.proximas} vazio="Nenhuma consulta marcada." agruparPorDia />
-      {g.semLeitura.length > 0 && <Bloco titulo="Já aconteceram (falta marcar como concluída)" itens={g.semLeitura} />}
+      <Bloco titulo="Próximas consultas" itens={g.proximas} vazio="Nenhuma consulta marcada." agruparPorDia />
+      {g.semLeitura.length > 0 && <Bloco titulo="Já passou o horário (falta enviar a leitura ou concluir)" itens={g.semLeitura} />}
+      {g.distancia.length > 0 && <Bloco titulo="Pedidos sem horário marcado" itens={g.distancia} />}
       <Bloco titulo="Histórico recente" itens={g.historico} vazio="Ainda sem histórico." compacto />
     </>
   )
@@ -272,25 +272,49 @@ function SemanaPadrao({ regras: iniciais, aoSalvar }) {
 function Servicos() {
   const [lista, setLista] = useState(null)
   const [editando, setEditando] = useState(null)
-  const carregar = () => api.listarServicos({ todos: true }).then(setLista)
+  const [msg, setMsg] = useState('')
+  const carregar = () => api.listarServicos({ todos: true }).then((l) => setLista([...l].sort((a, b) => a.ordem - b.ordem)))
   useEffect(() => { carregar() }, [])
   if (!lista) return <p className="texto-suave">Carregando…</p>
+
+  // troca a posição de duas consultas (a ordem é a mesma do site)
+  async function mover(i, passo) {
+    const j = i + passo
+    if (j < 0 || j >= lista.length) return
+    const nova = [...lista];[nova[i], nova[j]] = [nova[j], nova[i]]
+    setLista(nova)
+    await Promise.all(nova.map((s, k) => (s.ordem !== k ? api.salvarServico({ ...s, ordem: k }) : null)))
+    carregar()
+  }
   return (
     <section className="area-bloco">
-      <p className="texto-suave pequeno">O que você mudar aqui aparece no site e no agendamento.</p>
+      <p className="texto-suave pequeno">
+        Aqui você cria, edita, esconde, exclui e muda a ordem das suas consultas. O que mudar aparece na hora no site e no agendamento.
+      </p>
+      {msg && <p className="sucesso">{msg}</p>}
       <div className="servicos-admin">
-        {lista.map((s) => (
-          <button key={s.id} className={`servico-admin ${s.ativo ? '' : 'inativo'}`} onClick={() => setEditando({ ...s, detalhes: s.detalhes.join('\n') })}>
+        {lista.map((s, i) => (
+          <div key={s.id} className={`servico-admin ${s.ativo ? '' : 'inativo'}`}>
             <CartaCigana n={s.carta || 33} />
-            <div><strong>{s.nome}</strong><span>{reais(s.preco)} · {s.modo === 'ao-vivo' ? `ao vivo, ${s.minutos} min` : 'à distância'}{!s.ativo && ' · oculta'}</span></div>
-            <span className="link-sutil">editar</span>
-          </button>
+            <div>
+              <strong>{s.nome}</strong>
+              <span>{reais(s.preco)} · {s.modo === 'ao-vivo' ? 'ao vivo' : 'à distância'}{s.minutos ? ` · ${s.minutos} min na agenda` : ''}{!s.ativo && ' · escondida'}</span>
+            </div>
+            <div className="servico-acoes">
+              <button className="ordem-btn" title="Subir" disabled={i === 0} onClick={() => mover(i, -1)}>▲</button>
+              <button className="ordem-btn" title="Descer" disabled={i === lista.length - 1} onClick={() => mover(i, 1)}>▼</button>
+              <button className="link-sutil" onClick={() => { setMsg(''); setEditando({ ...s, detalhes: (s.detalhes || []).join('\n') }) }}>editar</button>
+            </div>
+          </div>
         ))}
-        <button className="servico-admin novo" onClick={() => setEditando({ id: '', nome: '', resumo: '', detalhes: '', modo: 'ao-vivo', minutos: 30, duracao: '30 min', preco: 100, carta: 1, destaque: false, ativo: true, chave: '', novo: true })}>
+        <button className="servico-admin novo" onClick={() => { setMsg(''); setEditando({ id: '', nome: '', resumo: '', detalhes: '', modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 50, carta: 1, destaque: false, ativo: true, chave: '', novo: true, ordem: lista.length }) }}>
           + Nova consulta
         </button>
       </div>
-      {editando && <EditarServico s={editando} fechar={() => setEditando(null)} aoSalvar={() => { setEditando(null); carregar() }} />}
+      {editando && (
+        <EditarServico s={editando} fechar={() => setEditando(null)}
+          aoSalvar={(texto) => { setEditando(null); setMsg(texto || ''); carregar() }} />
+      )}
     </section>
   )
 }
@@ -309,14 +333,18 @@ function EditarServico({ s, fechar, aoSalvar }) {
       const id = resto.id || resto.nome.toLowerCase().normalize('NFD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-')
       if (!id || !resto.nome) throw new Error('Dê um nome à consulta.')
       if (!(resto.preco > 0)) throw new Error('Preço inválido.')
-      if (resto.modo === 'ao-vivo' && !(resto.minutos >= 10)) throw new Error('Informe a duração em minutos.')
+      if (!(resto.minutos >= 10)) throw new Error('Informe quanto tempo a consulta ocupa na agenda (pelo menos 10 minutos).')
       await api.salvarServico({
-        ...resto, id, minutos: resto.modo === 'ao-vivo' ? resto.minutos : null,
+        ...resto, id, minutos: resto.minutos,
         detalhes: String(resto.detalhes).split('\n').map((x) => x.trim()).filter(Boolean),
-        ...(novo ? { ordem: 99 } : {}),
       })
-      aoSalvar()
+      aoSalvar(novo ? 'Consulta criada ✓' : 'Consulta salva ✓')
     } catch (err) { setErro(err.message) }
+  }
+  async function excluir() {
+    if (!confirm(`Excluir a consulta “${f.nome}”? Isso não pode ser desfeito.`)) return
+    setErro('')
+    try { await api.excluirServico(f.id); aoSalvar('Consulta excluída ✓') } catch (err) { setErro(err.message) }
   }
   return (
     <motion.div className="modal-fundo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={fechar}>
@@ -326,20 +354,20 @@ function EditarServico({ s, fechar, aoSalvar }) {
           <label>Nome<input required {...c('nome')} /></label>
           <label>Preço (R$)<input type="number" min="1" step="0.01" required {...c('preco', 'n')} /></label>
           <label>Formato
-            <select {...c('modo')}><option value="ao-vivo">Ao vivo (com horário)</option><option value="distancia">À distância (foto + áudio)</option></select>
+            <select {...c('modo')}><option value="distancia">À distância (foto + áudio, 24h após o pagamento)</option><option value="ao-vivo">Ao vivo (com dia e horário)</option></select>
           </label>
-          {f.modo === 'ao-vivo'
-            ? <label>Duração (minutos)<input type="number" min="10" step="5" {...c('minutos', 'n')} /></label>
-            : <label>Prazo de entrega<input {...c('duracao')} placeholder="Entrega em 24h" /></label>}
-          {f.modo === 'ao-vivo' && <label>Duração (como aparece no site)<input {...c('duracao')} placeholder="40 min" /></label>}
+          <label>Tempo na agenda (minutos) <small>quanto tempo do seu dia esta consulta ocupa</small>
+            <input type="number" min="10" step="5" placeholder="30" {...c('minutos', 'n')} /></label>
+          <label>Texto do prazo <small>(aparece no site)</small><input {...c('duracao')} placeholder={f.modo === 'ao-vivo' ? '40 min' : 'Entrega em 24h'} /></label>
           <label>Carta ilustrativa (1 a 36)<input type="number" min="1" max="36" {...c('carta', 'n')} /></label>
-          <label className="col-2">Frase curta<input {...c('resumo')} /></label>
+          <label className="col-2">Frase curta <small>(opcional, aparece embaixo do nome)</small><input {...c('resumo')} /></label>
           <label className="col-2">Itens (um por linha)<textarea rows={4} {...c('detalhes')} /></label>
-          <label className="check"><input type="checkbox" checked={f.destaque} onChange={(e) => setF({ ...f, destaque: e.target.checked })} /> Destacar como “a mais completa”</label>
-          <label className="check"><input type="checkbox" checked={f.ativo} onChange={(e) => setF({ ...f, ativo: e.target.checked })} /> Visível no site</label>
+          <label className="check"><input type="checkbox" checked={f.destaque} onChange={(e) => setF({ ...f, destaque: e.target.checked })} /> Mostrar em destaque no site (o cartão grande no topo das consultas)</label>
+          <label className="check"><input type="checkbox" checked={f.ativo} onChange={(e) => setF({ ...f, ativo: e.target.checked })} /> Visível no site (desmarque para esconder sem excluir)</label>
         </div>
         <Erro>{erro}</Erro>
         <div className="modal-acoes">
+          {!s.novo && <button type="button" className="botao botao-vazado perigo excluir" onClick={excluir}>Excluir</button>}
           <button type="button" className="botao botao-vazado" onClick={fechar}>Cancelar</button>
           <button className="botao">Salvar</button>
         </div>

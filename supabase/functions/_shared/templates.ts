@@ -8,6 +8,7 @@ export type Dados = {
   servico?: string
   aoVivo?: boolean
   inicio?: string | null
+  fim?: string | null
   duracao?: string
   valor?: number
   pergunta?: string | null
@@ -28,6 +29,9 @@ export const dataHora = (iso: string) => {
   const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
   return `${dia} às ${hora}`
 }
+// leitura à distância: 24h após o pagamento, ou o fim do horário marcado se for mais tarde
+const liberacao = (d: Dados) => d.pagoEm
+  ? new Date(Math.max(new Date(d.pagoEm).getTime() + 24 * 3600000, d.fim ? new Date(d.fim).getTime() : 0)).toISOString() : null
 const reais = (v?: number) => Number(v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 function botao(texto: string, href: string) {
@@ -91,7 +95,8 @@ export function confirmacao(d: Dados): Email {
     `Recebi sua pergunta · ${d.servico}`, 'Recebi sua pergunta', 'Sua leitura fica pronta 24 horas após o pagamento.',
     p(ola) + p('Seu pagamento foi aprovado e sua pergunta já está comigo:') +
     (d.pergunta ? `<p style="margin:18px 0;padding:14px 18px;border-left:3px solid ${C.latao};font-style:italic;background:#fbf6ea">“${esc(d.pergunta)}”</p>` : '') +
-    p(`Vou jogar as cartas e a sua leitura fica pronta <strong>24 horas após o pagamento</strong>${d.pagoEm ? `, em <strong>${esc(dataHora(new Date(new Date(d.pagoEm).getTime() + 24 * 3600000).toISOString()))}</strong>` : ''}: a foto da mesa com a minha explicação, na sua área do site. Aviso por e-mail quando estiver pronta.`) +
+    (d.inicio ? p(`Sua tiragem está marcada para <strong>${esc(dataHora(d.inicio))}</strong>.`) : '') +
+    p(`A sua leitura fica pronta <strong>24 horas após o pagamento</strong>${liberacao(d) ? `, em <strong>${esc(dataHora(liberacao(d)!))}</strong>` : ''}: a foto da mesa com a minha explicação, na sua área do site. Aviso por e-mail quando estiver pronta.`) +
     botao('Acompanhar', link), d.site,
     `${ola}\nRecebi sua pergunta. A leitura fica pronta 24h após o pagamento, na sua área: ${link}`,
   )
@@ -129,9 +134,9 @@ export function lembrete(d: Dados, quando: '24h' | '1h'): Email {
 /* ---------- para a cartomante ---------- */
 export function novaConsulta(d: Dados): Email {
   const link = `${d.site}/painel/consulta/${d.agendamentoId}`
-  const quando = d.aoVivo && d.inicio ? dataHora(d.inicio) : 'À distância (entregar 24h após o pagamento)'
+  const quando = d.inicio ? `${dataHora(d.inicio)}${d.aoVivo ? '' : ' (à distância)'}` : 'À distância (entregar 24h após o pagamento)'
   return montar(
-    `Nova consulta: ${d.nome || 'consulente'} · ${d.aoVivo && d.inicio ? dataHora(d.inicio) : 'à distância'}`,
+    `Nova consulta: ${d.nome || 'consulente'} · ${d.inicio ? dataHora(d.inicio) : 'à distância'}`,
     'Uma nova chave', `${d.nome} marcou ${d.servico}.`,
     p('Uma nova consulta foi paga e confirmada:') +
     quadro([
