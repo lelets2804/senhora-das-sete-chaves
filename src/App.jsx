@@ -25,7 +25,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/entrar" element={<Entrar />} />
-        <Route path="/agendar" element={<Agendar />} />
+        <Route path="/agendar" element={<Protegida><Agendar /></Protegida>} />
         <Route path="/pagamento/demo" element={<Protegida><PagamentoDemo /></Protegida>} />
         <Route path="/pagamento/retorno" element={<Protegida><RetornoPagamento /></Protegida>} />
         <Route path="/minha-area" element={<Protegida><MinhaArea /></Protegida>} />

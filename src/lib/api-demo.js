@@ -19,7 +19,14 @@ const AJUSTES_INICIAIS = [{ data: '2026-11-28', tipo: 'aberto', inicio: '09:00',
 
 function iniciar() {
   const v = ler('versao', 0)
-  if (v >= 3) return
+  if (v >= 4) return
+  if (v === 3) {
+    // troca as consultas imaginárias pelas reais (as antigas ficam escondidas por causa dos agendamentos de teste)
+    const antigas = ler('servicos', []).filter((s) => !consultas.some((c) => c.id === s.id)).map((s) => ({ ...s, ativo: false, ordem: 100 + s.ordem }))
+    gravar('servicos', [...consultas.map((c, i) => ({ ...c, ordem: i, ativo: true })), ...antigas])
+    gravar('versao', 4)
+    return
+  }
   if (v < 2) {
     gravar('agendamentos', [])
     gravar('leituras', {})
@@ -30,7 +37,7 @@ function iniciar() {
   gravar('regras', REGRAS_INICIAIS)
   gravar('excecoes', AJUSTES_INICIAIS)
   localStorage.removeItem(K + 'bloqueios')
-  gravar('versao', 3)
+  gravar('versao', 4)
 }
 iniciar()
 
@@ -84,6 +91,11 @@ export async function salvarServico(serv) {
   const s = ler('servicos', [])
   const existe = s.some((x) => x.id === serv.id)
   gravar('servicos', existe ? s.map((x) => (x.id === serv.id ? serv : x)) : [...s, { ...serv, ordem: s.length }])
+}
+export async function excluirServico(servId) {
+  exigir('admin')
+  if (ler('agendamentos', []).some((a) => a.servico_id === servId)) throw new Error('Esta consulta já foi comprada por alguém e não pode ser excluída. Desmarque “Visível no site” para escondê-la.')
+  gravar('servicos', ler('servicos', []).filter((s) => s.id !== servId))
 }
 export async function obterDisponibilidade() { return { regras: ler('regras', []), excecoes: ler('excecoes', []) } }
 export async function salvarRegras(regras) { exigir('admin'); gravar('regras', regras) }
@@ -269,9 +281,9 @@ function fotoDaMesa(cartas) {
   return cv.toDataURL('image/jpeg', 0.8)
 }
 function semearExemplo(u) {
-  const serv = ler('servicos', []).find((s) => s.id === 'pergunta')
+  const serv = ler('servicos', []).find((s) => s.id === 'perguntas-avulsas')
   const ag = {
-    id: id(), cliente_id: u.id, servico_id: serv?.id || 'pergunta', valor: serv?.preco || 45, status: 'concluido',
+    id: id(), cliente_id: u.id, servico_id: serv?.id || 'perguntas-avulsas', valor: serv?.preco || 27, status: 'concluido',
     pergunta: '(Exemplo) Vale a pena aceitar a proposta de trabalho?', inicio: null, fim: null,
     criado_em: new Date(Date.now() - 6 * 86400000).toISOString(), pago_em: new Date(Date.now() - 6 * 86400000).toISOString(),
     link_video: null, anotacao_cliente: '',

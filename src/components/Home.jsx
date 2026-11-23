@@ -156,44 +156,74 @@ function LequeCarta({ n, desloc, leque }) {
   )
 }
 
-/* III — Consultas como rótulos de botica */
+/* III — Consultas: um destaque grande + o "cardápio" da botica */
+const reaisBR = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
 function Consultas() {
   const [consultas, setConsultas] = useState(consultasPadrao)
   useEffect(() => { api.listarServicos().then((l) => l?.length && setConsultas(l)).catch(() => {}) }, [])
-  const formatar = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const destaque = consultas.find((c) => c.destaque)
+  const demais = consultas.filter((c) => c !== destaque)
   return (
     <section id="consultas" className="secao">
       <div className="secao-cabeca">
         <Revelar><span className="rotulo">Chave III · O que eu ofereço</span></Revelar>
         <Revelar atraso={0.1}><h2 className="titulo">As <em>consultas</em></h2></Revelar>
         <div className="ornamento">✦</div>
-        <p className="aviso-provisorio">consultas e preços imaginários</p>
       </div>
-      <div className="consultas-grade">
-        {consultas.map((c, i) => (
-          <Revelar key={c.id} atraso={i * 0.12}>
-            <Inclinar className={`frasco ${c.destaque ? 'destaque' : ''}`}>
-              <div className="frasco-brilho" />
-              {c.destaque && <span className="frasco-selo">a mais completa</span>}
-              <div className="frasco-topo">
-                <span className="frasco-chave">{c.chave}</span>
-                <CartaCigana n={c.carta} className="frasco-carta" />
-              </div>
-              <div className="frasco-rotulo">
-                <h3>{c.nome}</h3>
-                <p>{c.resumo}</p>
-                <ul>{c.detalhes.map((d) => <li key={d}>{d}</li>)}</ul>
-                <div className="frasco-rodape">
-                  <span className="frasco-modo">{c.modo === 'ao-vivo' ? '◉ Ao vivo' : '✉ À distância'}</span>
-                  <span className="frasco-preco">{formatar(Number(c.preco))}</span>
-                </div>
-                <Link to={`/agendar?consulta=${c.id}`} className="botao botao-vazado botao-largo">Escolher</Link>
-              </div>
-            </Inclinar>
+      {destaque && <Destaque c={destaque} />}
+      <div className="cardapio">
+        {demais.map((c, i) => (
+          <Revelar key={c.id} atraso={(i % 2) * 0.1 + Math.floor(i / 2) * 0.06}>
+            <Link to={`/agendar?consulta=${c.id}`} className="cardapio-item interativo">
+              <span className="cardapio-num">{ROMANOS_LONGOS[i + (destaque ? 1 : 0)] || ''}</span>
+              <CartaCigana n={c.carta || 33} className="cardapio-carta" />
+              <span className="cardapio-corpo">
+                <span className="cardapio-linha">
+                  <span className="cardapio-nome">{c.nome}</span>
+                  <span className="cardapio-pontos" aria-hidden />
+                  <span className="cardapio-preco">{reaisBR(c.preco)}</span>
+                </span>
+                <span className="cardapio-desc">{c.resumo || (c.modo === 'ao-vivo' ? 'Ao vivo, por chat ou vídeo' : 'Foto da mesa e explicação, na sua área do site')}</span>
+              </span>
+              <span className="cardapio-seta" aria-hidden>→</span>
+            </Link>
           </Revelar>
         ))}
       </div>
+      <p className="cardapio-nota">Você escolhe o dia e o horário · pagamento por Pix ou cartão · leitura entregue na sua área 24h após o pagamento</p>
     </section>
+  )
+}
+const ROMANOS_LONGOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV']
+
+function Destaque({ c }) {
+  const ano = (c.nome.match(/\d{4}/) || [])[0]
+  return (
+    <Revelar>
+      <Inclinar className="destaque" forca={6}>
+        <div className="destaque-brilho" />
+        {ano && <span className="destaque-ano" aria-hidden>{ano}</span>}
+        <div className="destaque-cartas">
+          {[c.carta || 16, 31, 32].map((n, i) => (
+            <motion.div key={i} className="destaque-carta" initial={{ rotate: 0, x: 0 }} whileInView={{ rotate: (i - 1) * 14, x: (i - 1) * 46 }}
+              viewport={{ once: true }} transition={{ delay: 0.4 + i * 0.1, type: 'spring', stiffness: 60 }}>
+              <CartaCigana n={n} />
+            </motion.div>
+          ))}
+        </div>
+        <div className="destaque-texto">
+          <span className="rotulo">Em destaque</span>
+          <h3>{c.nome}</h3>
+          {c.resumo && <p className="destaque-sub">{c.resumo}</p>}
+          {c.detalhes?.length > 0 && <ul className="destaque-lista">{c.detalhes.map((d) => <li key={d}>{d}</li>)}</ul>}
+          <div className="destaque-rodape">
+            <span className="destaque-preco">{reaisBR(c.preco)}</span>
+            <Link to={`/agendar?consulta=${c.id}`} className="botao">Quero a minha</Link>
+          </div>
+        </div>
+      </Inclinar>
+    </Revelar>
   )
 }
 

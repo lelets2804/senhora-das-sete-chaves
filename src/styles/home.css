@@ -79,33 +79,49 @@
   color: var(--vinho-claro); border: 1px dashed var(--vinho-claro); padding: .15rem .6rem; margin-top: 1rem; opacity: .8; }
 
 /* ---------- III · Consultas ---------- */
-.consultas-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; perspective: 1200px; }
 .inclinar { transform-style: preserve-3d; }
-.frasco { position: relative; height: 100%; display: flex; flex-direction: column; border-radius: 120px 120px 6px 6px; padding: 1.2rem;
-  background: linear-gradient(170deg, rgba(38,54,43,.9), rgba(13,19,15,.95)); border: 1px solid rgba(176,141,87,.45);
-  box-shadow: 0 30px 60px -25px #000; overflow: hidden; }
-.frasco.destaque { border-color: var(--latao-claro); box-shadow: 0 30px 60px -25px #000, 0 0 50px -10px rgba(224,196,141,.35); }
-.frasco-brilho { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s;
-  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,230,180,.18), transparent 45%); }
-.frasco:hover .frasco-brilho { opacity: 1; }
-.frasco-selo { position: absolute; top: 1.4rem; right: -2.6rem; transform: rotate(40deg); background: var(--vinho); padding: .3rem 3rem;
-  font-family: var(--antiga-sc); font-size: .6rem; letter-spacing: .2em; z-index: 3; }
-.frasco-topo { position: relative; display: grid; place-items: center; padding: 2.8rem 0 1rem; transform: translateZ(40px); }
-.frasco-chave { position: absolute; top: .4rem; font-family: var(--antiga); color: var(--latao); font-size: 1rem; }
-.frasco-carta { width: 110px; transform: rotate(-4deg); transition: transform .6s cubic-bezier(.2,.8,.2,1); }
-.frasco:hover .frasco-carta { transform: rotate(3deg) translateY(-6px) scale(1.05); }
-.frasco-rotulo { flex: 1; display: flex; flex-direction: column; background: var(--osso); color: #2a1f10; padding: 1.4rem 1.2rem 1.2rem; border-radius: 3px;
-  box-shadow: inset 0 0 0 4px var(--osso), inset 0 0 0 5px var(--latao-escuro); transform: translateZ(20px); }
-.frasco-rotulo h3 { font-family: var(--antiga); font-weight: 400; font-size: 1.5rem; text-align: center; line-height: 1.1; color: var(--vinho); }
-.frasco-rotulo > p { text-align: center; font-style: italic; font-size: 1rem; margin: .5rem 0 .8rem; }
-.frasco-rotulo ul { list-style: none; font-size: .95rem; border-top: 1px solid rgba(111,86,49,.4); padding-top: .6rem; flex: 1; }
-.frasco-rotulo li::before { content: '✦ '; color: var(--latao-escuro); font-size: .7em; }
-.frasco-rodape { display: flex; justify-content: space-between; align-items: baseline; margin: .8rem 0; border-top: 1px solid rgba(111,86,49,.4); padding-top: .6rem; }
-.frasco-modo { font-family: var(--antiga-sc); font-size: .72rem; letter-spacing: .1em; }
-.frasco-preco { font-family: var(--antiga); font-size: 1.6rem; color: var(--vinho); }
-.frasco .botao-vazado { color: var(--musgo-1); box-shadow: inset 0 0 0 1px var(--latao-escuro); justify-content: center; }
-.frasco .botao-vazado:hover { background: var(--musgo-1); color: var(--latao-claro); }
 .botao-largo { width: 100%; justify-content: center; }
+/* destaque */
+.destaque { position: relative; display: grid; grid-template-columns: .9fr 1.1fr; gap: 3rem; align-items: center; overflow: hidden;
+  padding: 3.5rem 4rem; margin-bottom: 4.5rem; border: 1px solid var(--latao); border-radius: 4px;
+  background: radial-gradient(ellipse at 20% 50%, rgba(122,34,50,.35), transparent 60%), linear-gradient(135deg, var(--musgo-3), var(--musgo-0));
+  box-shadow: 0 40px 80px -40px #000, inset 0 0 0 6px rgba(13,19,15,.6), inset 0 0 0 7px rgba(176,141,87,.35); }
+.destaque-brilho { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .5s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,230,180,.12), transparent 40%); }
+.destaque:hover .destaque-brilho { opacity: 1; }
+.destaque-ano { position: absolute; right: 2rem; top: -1.2rem; font-family: var(--antiga); font-size: clamp(6rem, 12vw, 10rem); line-height: 1;
+  color: transparent; -webkit-text-stroke: 1px rgba(224,196,141,.14); pointer-events: none; user-select: none; }
+.destaque-cartas { position: relative; height: 300px; display: grid; place-items: center; transform: translateZ(40px); }
+.destaque-carta { position: absolute; width: 150px; transform-origin: 50% 110%; }
+.destaque-carta:nth-child(2) { z-index: 2; }
+.destaque-texto { position: relative; z-index: 2; transform: translateZ(25px); }
+.destaque-texto h3 { font-family: var(--antiga); font-weight: 400; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.05; margin: .5rem 0 .6rem; }
+.destaque-sub { font-style: italic; font-size: 1.2rem; color: var(--latao-claro); margin-bottom: 1.4rem; }
+.destaque-lista { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: .35rem 1.6rem; padding: 1.1rem 0; margin-bottom: 1.4rem;
+  border-top: 1px solid rgba(176,141,87,.3); border-bottom: 1px solid rgba(176,141,87,.3); color: var(--osso-2); font-size: 1rem; }
+.destaque-lista li::before { content: '✦'; color: var(--latao); font-size: .65em; margin-right: .55rem; vertical-align: .15em; }
+.destaque-rodape { display: flex; align-items: center; justify-content: space-between; gap: 1.4rem; flex-wrap: wrap; }
+.destaque-preco { font-family: var(--antiga); font-size: 2.6rem; color: var(--latao-claro); line-height: 1; }
+/* cardápio */
+.cardapio { display: grid; grid-template-columns: 1fr 1fr; gap: 0 4rem; }
+.cardapio-item { position: relative; display: grid; grid-template-columns: 2.2rem 54px 1fr 1.5rem; gap: 1.1rem; align-items: center;
+  padding: 1.3rem .8rem; border-bottom: 1px solid rgba(176,141,87,.22); transition: background .4s; }
+.cardapio-item::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(176,141,87,.09), transparent);
+  opacity: 0; transition: opacity .4s; }
+.cardapio-item:hover::before { opacity: 1; }
+.cardapio-num { font-family: var(--antiga); font-size: .9rem; color: var(--latao-escuro); text-align: right; }
+.cardapio-carta { width: 54px; transform: rotate(-6deg); transition: transform .6s cubic-bezier(.2,.8,.2,1); }
+.cardapio-item:hover .cardapio-carta { transform: rotate(4deg) scale(1.12) translateY(-4px); }
+.cardapio-corpo { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.cardapio-linha { display: flex; align-items: baseline; gap: .7rem; }
+.cardapio-nome { font-family: var(--antiga); font-size: 1.45rem; line-height: 1.15; color: var(--osso); transition: color .3s; white-space: nowrap; }
+.cardapio-item:hover .cardapio-nome { color: var(--latao-claro); }
+.cardapio-pontos { flex: 1; min-width: .6rem; border-bottom: 1px dotted rgba(176,141,87,.55); transform: translateY(-.3em); }
+.cardapio-preco { font-family: var(--antiga); font-size: 1.45rem; color: var(--latao-claro); white-space: nowrap; }
+.cardapio-desc { font-size: .95rem; font-style: italic; color: var(--osso-2); opacity: .75; }
+.cardapio-seta { color: var(--latao); opacity: 0; transform: translateX(-8px); transition: .4s; }
+.cardapio-item:hover .cardapio-seta { opacity: 1; transform: none; }
+.cardapio-nota { text-align: center; margin-top: 3rem; font-family: var(--antiga-sc); font-size: .75rem; letter-spacing: .16em; color: var(--latao); }
 
 /* ---------- IV · Como funciona (portal) ---------- */
 .portal { position: relative; perspective: 1800px; max-width: 1100px; margin: 0 auto; border: 1px solid var(--latao); border-radius: 260px 260px 4px 4px;
@@ -165,6 +181,10 @@
 @media (min-width: 961px) { .secao { padding-right: max(6vw, 9rem); padding-left: max(6vw, 9rem); } }
 @media (max-width: 960px) {
   .senhora-grade, .lua-grade, .agendar { grid-template-columns: 1fr; gap: 3.5rem; }
+  .destaque { grid-template-columns: 1fr; padding: 2.5rem 1.6rem; gap: 1.5rem; }
+  .destaque-cartas { height: 240px; }
+  .destaque-carta { width: 120px; }
+  .cardapio { grid-template-columns: 1fr; }
   .senhora-retrato { max-width: 360px; margin: 0 auto; }
   .portal-interior { grid-template-columns: 1fr 1fr; padding: 8rem 2rem 3rem; }
   .agendar { justify-items: center; text-align: center; }
@@ -173,6 +193,13 @@
 }
 @media (max-width: 600px) {
   .link-sutil { display: none; }
+  .destaque-lista { grid-template-columns: 1fr; }
+  .cardapio-item { grid-template-columns: 44px 1fr; padding: 1.1rem .2rem; }
+  .cardapio-num, .cardapio-seta { display: none; }
+  .cardapio-carta { width: 44px; }
+  .cardapio-linha { flex-wrap: wrap; }
+  .cardapio-nome { white-space: normal; }
+  .cardapio-nome, .cardapio-preco { font-size: 1.25rem; }
   .portal { border-radius: 160px 160px 4px 4px; }
   .portal-interior { grid-template-columns: 1fr; border-radius: 150px 150px 2px 2px; }
   .leque { height: 240px; }

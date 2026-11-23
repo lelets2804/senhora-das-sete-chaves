@@ -2,7 +2,9 @@
 import { createClient } from '@supabase/supabase-js'
 
 // (valores de reserva só para não quebrar no modo demonstração, quando este arquivo não é usado)
-export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54321', import.meta.env.VITE_SUPABASE_ANON_KEY || 'demo')
+// limpa espaços, barra no final e "/rest/v1" colados por engano (causam "Invalid path specified in request URL")
+const URL_SB = (import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54321').trim().replace(/\/+$/, '').replace(/\/(rest|auth)\/v1$/, '')
+export const supabase = createClient(URL_SB, (import.meta.env.VITE_SUPABASE_ANON_KEY || 'demo').trim())
 const BUCKET = 'leituras'
 
 const ok = ({ data, error }) => { if (error) throw new Error(traduzir(error.message)); return data }
@@ -11,6 +13,8 @@ function traduzir(msg = '') {
   if (/already registered/i.test(msg)) return 'Este e-mail já tem cadastro.'
   if (/Email not confirmed/i.test(msg)) return 'Confirme seu e-mail pelo link que enviamos antes de entrar.'
   if (/Password should be/i.test(msg)) return 'A senha precisa ter pelo menos 6 caracteres.'
+  if (/foreign key/i.test(msg)) return 'Esta consulta já foi comprada por alguém e não pode ser excluída. Desmarque “Visível no site” para escondê-la.'
+  if (/Invalid path specified/i.test(msg)) return 'Endereço do Supabase configurado errado (VITE_SUPABASE_URL). Confira se é só https://xxxx.supabase.co, sem nada depois.'
   return msg
 }
 
@@ -46,6 +50,7 @@ export async function listarServicos({ todos = false } = {}) {
   return ok(await q)
 }
 export async function salvarServico(s) { ok(await supabase.from('servicos').upsert(s)) }
+export async function excluirServico(id) { ok(await supabase.from('servicos').delete().eq('id', id)) }
 const hhmm = (t) => (t ? t.slice(0, 5) : null)
 export async function obterDisponibilidade() {
   const regras = ok(await supabase.from('disponibilidade').select('dia_semana, inicio, fim'))

@@ -42,6 +42,7 @@ export default function Entrar() {
           <span className="rotulo">Área do consulente</span>
           <h1 className="titulo">{titulos[modo][0]}</h1>
         </div>
+        {voltar?.startsWith('/agendar') && <p className="aviso-agendar">Para agendar sua consulta, entre na sua conta ou crie uma. É rapidinho. ✦</p>}
         <form onSubmit={enviar} className="formulario">
           <AnimatePresence initial={false}>
             {modo === 'cadastro' && (

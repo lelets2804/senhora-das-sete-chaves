@@ -77,9 +77,13 @@ export function RetornoPagamento() {
             <span className="rotulo">Pagamento aprovado</span>
             <h1 className="titulo">A porta <em>se abriu</em></h1>
             <p className="texto-suave">
-              {ag.inicio
+              {ag.servico?.modo === 'ao-vivo'
                 ? <>Sua consulta <strong>{ag.servico?.nome}</strong> está marcada para <strong>{formatarDataHora(ag.inicio)}</strong>. No horário, entre na Sala de Consulta pela sua área.</>
-                : <>Recebemos sua pergunta. A leitura fica pronta na sua área <strong>24 horas após o pagamento</strong>{liberacaoDaLeitura(ag) && <>: {formatarDataHora(liberacaoDaLeitura(ag).toISOString())}</>}.</>}
+                : <>
+                    {ag.inicio && <>Sua tiragem <strong>{ag.servico?.nome}</strong> está marcada para <strong>{formatarDataHora(ag.inicio)}</strong>. </>}
+                    A leitura fica pronta na sua área <strong>24 horas após o pagamento</strong>
+                    {liberacaoDaLeitura(ag) && <>: <strong>{formatarDataHora(liberacaoDaLeitura(ag).toISOString())}</strong></>}.
+                  </>}
             </p>
             <Link to={`/minha-area/consulta/${ag.id}`} className="botao">Ver minha consulta</Link>
           </>

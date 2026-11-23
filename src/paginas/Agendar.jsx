@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import api, { MODO_DEMO } from '../lib/api'
-import { useAuth } from '../lib/auth'
 import { consultas as consultasPadrao } from '../data/consultas'
-import { hojeLocal, somarDias, horariosDoDia, formatarHora, formatarData, formatarDataHora, reais, diaDaSemana, FUSO } from '../lib/horarios'
+import { hojeLocal, somarDias, horariosDoDia, formatarHora, formatarData, formatarDataHora, reais, diaDaSemana, FUSO, pedeHorario } from '../lib/horarios'
 import { PaginaInterna, Moldura, Erro, AvisoDemo } from '../components/Interno'
 import { CartaCigana } from '../components/Basicos'
 
@@ -13,7 +12,6 @@ const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 
 export default function Agendar() {
   const [params, setParams] = useSearchParams()
-  const { usuario } = useAuth()
   const nav = useNavigate()
   const [servicos, setServicos] = useState(consultasPadrao)
   const [agenda, setAgenda] = useState(null)
@@ -25,7 +23,7 @@ export default function Agendar() {
 
   const servico = servicos.find((s) => s.id === params.get('consulta'))
   const horario = params.get('horario')
-  const precisaHorario = servico?.modo === 'ao-vivo'
+  const precisaHorario = pedeHorario(servico)
   const passo = !servico ? 1 : precisaHorario && !horario ? 2 : 3
 
   useEffect(() => { api.listarServicos().then(setServicos).catch(() => {}) }, [])
@@ -156,18 +154,10 @@ export default function Agendar() {
                   acompanhamento médico, psicológico, jurídico ou financeiro.</span>
               </label>
               <Erro>{erro}</Erro>
-              {usuario ? (
-                <button className="botao botao-largo" onClick={pagar}
-                  disabled={pagando || !aceite || (servico.modo === 'distancia' && pergunta.trim().length < 5)}>
-                  {pagando ? 'Abrindo o pagamento…' : `Pagar ${reais(servico.preco)} · Pix ou cartão`}
-                </button>
-              ) : (
-                <div className="precisa-login">
-                  <p>Para concluir, entre na sua conta. Sua escolha fica guardada.</p>
-                  <Link className="botao" to={`/entrar?modo=cadastro&voltar=${encodeURIComponent(`/agendar?${params}`)}`}>Criar conta</Link>
-                  <Link className="botao botao-vazado" to={`/entrar?voltar=${encodeURIComponent(`/agendar?${params}`)}`}>Já tenho conta</Link>
-                </div>
-              )}
+              <button className="botao botao-largo" onClick={pagar}
+                disabled={pagando || !aceite || (servico.modo === 'distancia' && pergunta.trim().length < 5)}>
+                {pagando ? 'Abrindo o pagamento…' : `Pagar ${reais(servico.preco)} · Pix ou cartão`}
+              </button>
               <p className="seguro">🔒 Pagamento processado pelo Mercado Pago{MODO_DEMO && ' (simulado na demonstração)'}</p>
             </Moldura>
           </motion.div>

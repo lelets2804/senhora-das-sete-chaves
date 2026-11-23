@@ -81,8 +81,12 @@ export function horariosDoDia(data, { regras, excecoes = [], ocupados, minutos, 
 export const HORAS_ENTREGA = 24
 export function liberacaoDaLeitura(ag) {
   if (ag?.servico?.modo !== 'distancia' || !ag.pago_em) return null
-  return new Date(new Date(ag.pago_em).getTime() + HORAS_ENTREGA * 3600000)
+  // 24h após o pagamento — ou o fim do horário marcado, se for mais tarde
+  const vinteQuatro = new Date(ag.pago_em).getTime() + HORAS_ENTREGA * 3600000
+  return new Date(Math.max(vinteQuatro, ag.fim ? new Date(ag.fim).getTime() : 0))
 }
+/** A consulta pede dia e horário? (sim, sempre que tiver tempo reservado na agenda) */
+export const pedeHorario = (servico) => Number(servico?.minutos) > 0
 export const leituraLiberada = (ag, agora = Date.now()) => { const l = liberacaoDaLeitura(ag); return !l || l.getTime() <= agora }
 
 export const formatarHora = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })

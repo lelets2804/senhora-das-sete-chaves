@@ -1,56 +1,37 @@
-// CONSULTAS PROVISÓRIAS — troque pelos serviços reais.
-// modo: 'distancia' = a cartomante joga e envia foto da mesa + áudio/texto pelo site
+// CONSULTAS DA CARTOMANTE (valores iniciais — depois ela edita tudo pelo painel, aba "Consultas e preços").
+// modo: 'distancia' = a cartomante joga no horário marcado e envia foto da mesa + áudio/texto pelo site
 //       'ao-vivo'   = encontro na Sala de Consulta do site (chat ou vídeo)
+// minutos: tempo reservado na agenda (o consulente escolhe dia e horário). Vazio = sem horário.
 export const consultas = [
   {
-    id: 'pergunta',
+    id: 'previsoes-2027',
     chave: 'I',
-    nome: 'Chave da Pergunta',
-    resumo: 'Uma pergunta objetiva, respondida com clareza.',
-    detalhes: ['1 pergunta', 'Tiragem de 3 cartas', 'Foto da mesa + áudio', 'Entregue 24h após o pagamento'],
+    nome: 'Previsões para 2027',
+    resumo: 'Um novo ciclo se aproxima… Descubra o que o universo reserva para você!',
+    detalhes: [
+      'Mandala Anual: os 12 meses de 2027',
+      'Tiragem Completa 2027',
+      'Área Amorosa',
+      'Área Financeira e Profissional',
+      'Área Familiar e Social',
+      'Conselho para 2027',
+      'Área do Ano',
+      'Baralho Lenormand',
+    ],
     modo: 'distancia',
     duracao: 'Entrega em 24h',
-    minutos: null,
-    preco: 45,
-    carta: 33,
-  },
-  {
-    id: 'amor',
-    chave: 'II',
-    nome: 'Chave do Coração',
-    resumo: 'Para os assuntos do amor, dos laços e dos reencontros.',
-    detalhes: ['Até 3 perguntas', 'Tiragem de 9 cartas', 'Ao vivo por chat ou vídeo', '40 minutos'],
-    modo: 'ao-vivo',
-    duracao: '40 min',
-    minutos: 40,
-    preco: 130,
-    carta: 24,
-  },
-  {
-    id: 'caminhos',
-    chave: 'III',
-    nome: 'Chave dos Caminhos',
-    resumo: 'Trabalho, dinheiro e decisões: para onde a estrada aponta.',
-    detalhes: ['Perguntas livres', 'Tiragem de 9 cartas', 'Ao vivo por chat ou vídeo', '50 minutos'],
-    modo: 'ao-vivo',
-    duracao: '50 min',
-    minutos: 50,
-    preco: 160,
-    carta: 22,
-  },
-  {
-    id: 'mesa-real',
-    chave: 'VII',
-    nome: 'Mesa Real',
-    resumo: 'As 36 cartas na mesa. A leitura mais completa da casa.',
-    detalhes: ['Todas as áreas da vida', 'Grand Tableau (36 cartas)', 'Ao vivo por vídeo', '1h30'],
-    modo: 'ao-vivo',
-    duracao: '1h30',
-    minutos: 90,
-    preco: 290,
-    carta: 29,
+    minutos: 60,
+    preco: 277,
+    carta: 16,
     destaque: true,
   },
+  { id: 'baralho-do-amor', chave: 'II', nome: 'Baralho do Amor', resumo: '', detalhes: ['Foto da mesa + explicação', 'Entregue 24h após o pagamento'], modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 57, carta: 24 },
+  { id: 'baralho-de-lucios', chave: 'III', nome: 'Baralho de Lúcios', resumo: '', detalhes: ['Foto da mesa + explicação', 'Entregue 24h após o pagamento'], modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 77, carta: 32 },
+  { id: 'perguntas-avulsas', chave: 'IV', nome: 'Perguntas Avulsas', resumo: '', detalhes: ['Foto da mesa + explicação', 'Entregue 24h após o pagamento'], modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 27, carta: 33 },
+  { id: 'previsao-semanal', chave: 'V', nome: 'Previsão Semanal', resumo: '', detalhes: ['Foto da mesa + explicação', 'Entregue 24h após o pagamento'], modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 177, carta: 31 },
+  { id: 'previsao-mensal', chave: 'VI', nome: 'Previsão Mensal', resumo: '', detalhes: ['Foto da mesa + explicação', 'Entregue 24h após o pagamento'], modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 207, carta: 32 },
+  { id: 'previsao-trimestral', chave: 'VII', nome: 'Previsão Trimestral', resumo: '', detalhes: ['Foto da mesa + explicação', 'Entregue 24h após o pagamento'], modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 307, carta: 22 },
+  { id: 'previsao-semestral', chave: 'VIII', nome: 'Previsão Semestral', resumo: '', detalhes: ['Foto da mesa + explicação', 'Entregue 24h após o pagamento'], modo: 'distancia', duracao: 'Entrega em 24h', minutos: 30, preco: 377, carta: 2 },
 ]
 
 export const depoimentos = [
